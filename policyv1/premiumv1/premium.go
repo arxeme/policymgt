@@ -1,4 +1,4 @@
-package premium
+package premiumv1
 
 import "time"
 
