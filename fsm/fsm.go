@@ -3,10 +3,16 @@ package fsm
 import (
 	"errors"
 	"fmt"
+	"reflect"
+	"strconv"
 )
 
-// Undefined - default value for state/transition, should define from 1
-const Undefined int = 0
+// consts for state/transition
+const (
+	Undefined     int    = 0
+	StateTag      string = "state"
+	TransitionTag string = "transition"
+)
 
 // Statable - Struct with state
 type Statable interface {
@@ -54,7 +60,41 @@ type Controller struct {
 }
 
 // NewController - Create a controller
-func NewController() *Controller {
+func NewController(statesptr, transptr interface{}) *Controller {
+	// init states by tag
+	v := reflect.ValueOf(statesptr).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		if v.Field(i).Kind() != reflect.Int {
+			panic("only int type is supported in state")
+		}
+		tag := v.Type().Field(i).Tag.Get(StateTag)
+		if tag == "" {
+			panic("state not defined")
+		}
+		if tagv, err := strconv.Atoi(tag); err != nil {
+			panic("invalid value of state")
+		} else {
+			v.Field(i).SetInt(int64(tagv))
+		}
+	}
+	// init transition by tag
+	v = reflect.ValueOf(transptr).Elem()
+	for i := 0; i < v.NumField(); i++ {
+		if v.Field(i).Type().String() != "int" {
+			panic("only int type is supported in transition")
+		}
+		tag := v.Type().Field(i).Tag.Get(TransitionTag)
+		if tag == "" {
+			panic("transition not defined")
+		}
+		if tagv, err := strconv.Atoi(tag); err != nil {
+			panic("invalid value of transition")
+		} else {
+			v.Field(i).SetInt(int64(tagv))
+		}
+	}
+
+	// create controller
 	c := Controller{transitions: make(map[int](map[int](*target)))}
 	return &c
 }

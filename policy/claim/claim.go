@@ -2,86 +2,74 @@ package claim
 
 import "github.com/arxeme/policymgt/fsm"
 
-// State - Claim state enum
-type State int
-
 // Claim state consts
-const (
-	Initialized             State = 1  // Initial status
-	Processing              State = 2  // Pending at operation team, to process the claim
-	Pending                 State = 3  // Pending at customer, to submit requested documents
-	Rejected                State = 4  // Claim is rejected by operation team
-	Approved                State = 5  // Claim is approved by operation team, will start reimbursement
-	ReimbursementPending    State = 11 // Pending required information for reimbursement from customer
-	ReimbursementProcessing State = 12 // Pending reimbursement at finance team
-	ReimbursementFailed     State = 13 // Failed in processing the reimbursement
-	Reimbursed              State = 14 // Reimbursement is done successfully
-)
+type stateEnums struct {
+	Initialized             int `state:"1"`  // Initial status
+	Processing              int `state:"2"`  // Pending at operation team, to process the claim
+	Pending                 int `state:"3"`  // Pending at customer, to submit requested documents
+	Rejected                int `state:"4"`  // Claim is rejected by operation team
+	Approved                int `state:"5"`  // Claim is approved by operation team, will start reimbursement
+	ReimbursementPending    int `state:"11"` // Pending required information for reimbursement from customer
+	ReimbursementProcessing int `state:"12"` // Pending reimbursement at finance team
+	ReimbursementFailed     int `state:"13"` // Failed in processing the reimbursement
+	Reimbursed              int `state:"14"` // Reimbursement is done successfully
+}
 
-// Transition - Claim transition enum
-type Transition int
+// State - Claim state enum
+var State stateEnums
 
 // Claim transition consts
-const (
-	File                 Transition = 1
-	ProofRequest         Transition = 2
-	ProofSubmit          Transition = 3
-	ProofExpire          Transition = 4
-	Approve              Transition = 5
-	Reject               Transition = 6
-	ReimbursementStart   Transition = 11
-	ReimbursementRequest Transition = 12
-	ReimbursementFail    Transition = 13
-	ReimbursementSucceed Transition = 14
-	ReimbursementSolve   Transition = 15
-)
+type transitionEnums struct {
+	File                 int `transition:"1"`
+	ProofRequest         int `transition:"2"`
+	ProofSubmit          int `transition:"3"`
+	ProofExpire          int `transition:"4"`
+	Approve              int `transition:"5"`
+	Reject               int `transition:"6"`
+	ReimbursementStart   int `transition:"11"`
+	ReimbursementRequest int `transition:"12"`
+	ReimbursementFail    int `transition:"13"`
+	ReimbursementSucceed int `transition:"14"`
+	ReimbursementSolve   int `transition:"15"`
+}
+
+// Transition - Claim transition enum
+var Transition transitionEnums
 
 var controller *fsm.Controller
 
 // Init - Construct the FSM
 func Init() {
-	controller = fsm.NewController()
+	controller = fsm.NewController(State, Transition)
 
-	addTransition(Initialized, Processing, File)
-	addTransition(Processing, Pending, ProofRequest)
-	addTransition(Pending, Processing, ProofSubmit)
-	addTransition(Processing, Approved, Approve)
-	addTransition(Processing, Rejected, Reject)
-	addTransition(Approved, ReimbursementPending, ReimbursementStart)
-	addTransition(ReimbursementPending, ReimbursementProcessing, ReimbursementRequest)
-	addTransition(ReimbursementProcessing, ReimbursementFailed, ReimbursementFail)
-	addTransition(ReimbursementProcessing, Reimbursed, ReimbursementSucceed)
-	addTransition(ReimbursementFailed, Reimbursed, ReimbursementSolve)
+	controller.AddTransition(State.Initialized, State.Processing, Transition.File)
+	controller.AddTransition(State.Processing, State.Pending, Transition.ProofRequest)
+	controller.AddTransition(State.Pending, State.Processing, Transition.ProofSubmit)
+	controller.AddTransition(State.Processing, State.Approved, Transition.Approve)
+	controller.AddTransition(State.Processing, State.Rejected, Transition.Reject)
+	controller.AddTransition(State.Approved, State.ReimbursementPending, Transition.ReimbursementStart)
+	controller.AddTransition(State.ReimbursementPending, State.ReimbursementProcessing, Transition.ReimbursementRequest)
+	controller.AddTransition(State.ReimbursementProcessing, State.ReimbursementFailed, Transition.ReimbursementFail)
+	controller.AddTransition(State.ReimbursementProcessing, State.Reimbursed, Transition.ReimbursementSucceed)
+	controller.AddTransition(State.ReimbursementFailed, State.Reimbursed, Transition.ReimbursementSolve)
 }
 
 // Transit - Transit claim state
-func Transit(c *Claim, tsn Transition) {
-	controller.Transit(*c, int(tsn))
-}
-
-func addTransition(src, dst State, tsn Transition) error {
-	return controller.AddTransition(int(src), int(dst), int(tsn))
-}
-
-func addPrerequisite(state State, e *fsm.Event) error {
-	return controller.AddPrerequisite(int(state), e)
-}
-
-func addTrigger(state State, e *fsm.Event) error {
-	return controller.AddTrigger(int(state), e)
+func Transit(c *Claim, tsn int) {
+	controller.Transit(*c, tsn)
 }
 
 // Claim - structure represent premium
 type Claim struct {
-	state State
+	state int
 }
 
 // GetState - Implenmentation of interface fsm.Statable.GetState()
 func (c Claim) GetState() int {
-	return int(c.state)
+	return c.state
 }
 
 // SetState - Implenmentation of interface fsm.Statable.SetState()
 func (c Claim) SetState(s int) {
-	c.state = State(s)
+	c.state = s
 }

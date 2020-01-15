@@ -2,86 +2,72 @@ package premium
 
 import "github.com/arxeme/policymgt/fsm"
 
-// State - Premium state enum
-type State int
+type state struct {
+	Initialized      int `state:"1"`  // Initial status
+	Pending          int `state:"2"`  // Pending customer action, to pay premium
+	Processing       int `state:"3"`  // Pending at finance team, to confirm the payment
+	Paid             int `state:"4"`  // Payment is confirmed
+	RefundRequested  int `state:"11"` // Refund request is send by customer
+	RefundProcessing int `state:"12"` // Refund is pending processing by finance team
+	RefundFailed     int `state:"13"` // Refund failed
+	Refunded         int `state:"14"` // Refund successful
+}
 
-// Premium state consts
-const (
-	Initialized      State = 1  // Initial status
-	Pending          State = 3  // Pending customer action, to pay premium
-	Processing       State = 4  // Pending at finance team, to confirm the payment
-	Paid             State = 5  // Payment is confirmed
-	RefundRequested  State = 11 // Refund request is send by customer
-	RefundProcessing State = 12 // Refund is pending processing by finance team
-	RefundFailed     State = 13 // Refund failed
-	Refunded         State = 14 // Refund successful
-)
+type transition struct {
+	Invoice       int `transition:"1"`
+	Pay           int `transition:"2"`
+	PaymentFail   int `transition:"3"`
+	PaymendDone   int `transition:"4"`
+	RefundRequest int `transition:"11"`
+	RefundReject  int `transition:"12"`
+	RefundApprove int `transition:"13"`
+	RefundFail    int `transition:"14"`
+	RefundSucceed int `transition:"15"`
+	RefundCancel  int `transition:"16"`
+	RefundSolve   int `transition:"17"`
+}
+
+// State - Premium state enum
+var State state
 
 // Transition - Premium transition enum
-type Transition int
-
-// Premium transition consts
-const (
-	Invoice       Transition = 1
-	Pay           Transition = 2
-	PaymentFail   Transition = 3
-	PaymendDone   Transition = 4
-	RefundRequest Transition = 11
-	RefundReject  Transition = 12
-	RefundApprove Transition = 13
-	RefundFail    Transition = 14
-	RefundSucceed Transition = 15
-	RefundCancel  Transition = 16
-	RefundSolve   Transition = 17
-)
+var Transition transition
 
 var controller *fsm.Controller
 
 // Init - Construct the FSM
 func Init() {
-	controller = fsm.NewController()
+	controller = fsm.NewController(State, Transition)
 
-	addTransition(Initialized, Pending, Invoice)
-	addTransition(Pending, Processing, Pay)
-	addTransition(Processing, Pending, PaymentFail)
-	addTransition(Processing, Paid, PaymendDone)
-	addTransition(Paid, RefundRequested, RefundRequest)
-	addTransition(RefundRequested, Paid, RefundReject)
-	addTransition(RefundRequested, RefundProcessing, RefundApprove)
-	addTransition(RefundProcessing, RefundFailed, RefundFail)
-	addTransition(RefundProcessing, Refunded, RefundSucceed)
-	addTransition(RefundFailed, Paid, RefundCancel)
-	addTransition(RefundFailed, Refunded, RefundSolve)
+	controller.AddTransition(State.Initialized, State.Pending, Transition.Invoice)
+	controller.AddTransition(State.Pending, State.Processing, Transition.Pay)
+	controller.AddTransition(State.Processing, State.Pending, Transition.PaymentFail)
+	controller.AddTransition(State.Processing, State.Paid, Transition.PaymendDone)
+	controller.AddTransition(State.Paid, State.RefundRequested, Transition.RefundRequest)
+	controller.AddTransition(State.RefundRequested, State.Paid, Transition.RefundReject)
+	controller.AddTransition(State.RefundRequested, State.RefundProcessing, Transition.RefundApprove)
+	controller.AddTransition(State.RefundProcessing, State.RefundFailed, Transition.RefundFail)
+	controller.AddTransition(State.RefundProcessing, State.Refunded, Transition.RefundSucceed)
+	controller.AddTransition(State.RefundFailed, State.Paid, Transition.RefundCancel)
+	controller.AddTransition(State.RefundFailed, State.Refunded, Transition.RefundSolve)
 }
 
 // Transit - Transit claim state
-func Transit(a *Premium, tsn Transition) {
-	controller.Transit(*a, int(tsn))
-}
-
-func addTransition(src, dst State, tsn Transition) error {
-	return controller.AddTransition(int(src), int(dst), int(tsn))
-}
-
-func addPrerequisite(state State, e *fsm.Event) error {
-	return controller.AddPrerequisite(int(state), e)
-}
-
-func addTrigger(state State, e *fsm.Event) error {
-	return controller.AddTrigger(int(state), e)
+func Transit(a *Premium, tsn int) {
+	controller.Transit(*a, tsn)
 }
 
 // Premium - structure represent premium
 type Premium struct {
-	state State
+	state int
 }
 
 // GetState - Implenmentation of interface fsm.Statable.GetState()
 func (p Premium) GetState() int {
-	return int(p.state)
+	return p.state
 }
 
 // SetState - Implenmentation of interface fsm.Statable.SetState()
 func (p Premium) SetState(s int) {
-	p.state = State(s)
+	p.state = s
 }
