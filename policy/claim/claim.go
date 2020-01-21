@@ -2,8 +2,8 @@ package claim
 
 import "github.com/arxeme/policymgt/fsm"
 
-// Claim state consts
-type stateEnums struct {
+// State - Claim state enum
+var State = &struct {
 	Initialized             int `state:"1"`  // Initial status
 	Processing              int `state:"2"`  // Pending at operation team, to process the claim
 	Pending                 int `state:"3"`  // Pending at customer, to submit requested documents
@@ -13,33 +13,28 @@ type stateEnums struct {
 	ReimbursementProcessing int `state:"12"` // Pending reimbursement at finance team
 	ReimbursementFailed     int `state:"13"` // Failed in processing the reimbursement
 	Reimbursed              int `state:"14"` // Reimbursement is done successfully
-}
+}{}
 
-// State - Claim state enum
-var State stateEnums
-
-// Claim transition consts
-type transitionEnums struct {
-	File                 int `transition:"1"`
-	ProofRequest         int `transition:"2"`
-	ProofSubmit          int `transition:"3"`
-	ProofExpire          int `transition:"4"`
-	Approve              int `transition:"5"`
-	Reject               int `transition:"6"`
+// Transition - Claim transition enum
+var Transition = &struct {
+	Create               int `transition:"1"`
+	File                 int `transition:"2"`
+	ProofRequest         int `transition:"3"`
+	ProofSubmit          int `transition:"4"`
+	ProofExpire          int `transition:"5"`
+	Approve              int `transition:"6"`
+	Reject               int `transition:"7"`
 	ReimbursementStart   int `transition:"11"`
 	ReimbursementRequest int `transition:"12"`
 	ReimbursementFail    int `transition:"13"`
 	ReimbursementSucceed int `transition:"14"`
 	ReimbursementSolve   int `transition:"15"`
-}
-
-// Transition - Claim transition enum
-var Transition transitionEnums
+}{}
 
 var controller *fsm.Controller
 
-// Init - Construct the FSM
-func Init() {
+// Initialize - Construct the FSM
+func Initialize() {
 	controller = fsm.NewController(State, Transition)
 
 	controller.AddTransition(State.Initialized, State.Processing, Transition.File)

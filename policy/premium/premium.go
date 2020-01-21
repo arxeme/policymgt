@@ -2,8 +2,8 @@ package premium
 
 import "github.com/arxeme/policymgt/fsm"
 
-type state struct {
-	Initialized      int `state:"1"`  // Initial status
+// State - Premium state enum
+var State = &struct {
 	Pending          int `state:"2"`  // Pending customer action, to pay premium
 	Processing       int `state:"3"`  // Pending at finance team, to confirm the payment
 	Paid             int `state:"4"`  // Payment is confirmed
@@ -11,10 +11,11 @@ type state struct {
 	RefundProcessing int `state:"12"` // Refund is pending processing by finance team
 	RefundFailed     int `state:"13"` // Refund failed
 	Refunded         int `state:"14"` // Refund successful
-}
+}{}
 
-type transition struct {
-	Invoice       int `transition:"1"`
+// Transition - Premium transition enum
+var Transition = &struct {
+	Create        int `transition:"1"`
 	Pay           int `transition:"2"`
 	PaymentFail   int `transition:"3"`
 	PaymendDone   int `transition:"4"`
@@ -25,21 +26,14 @@ type transition struct {
 	RefundSucceed int `transition:"15"`
 	RefundCancel  int `transition:"16"`
 	RefundSolve   int `transition:"17"`
-}
-
-// State - Premium state enum
-var State state
-
-// Transition - Premium transition enum
-var Transition transition
+}{}
 
 var controller *fsm.Controller
 
-// Init - Construct the FSM
-func Init() {
+// Initialize - Construct the FSM
+func Initialize() {
 	controller = fsm.NewController(State, Transition)
 
-	controller.AddTransition(State.Initialized, State.Pending, Transition.Invoice)
 	controller.AddTransition(State.Pending, State.Processing, Transition.Pay)
 	controller.AddTransition(State.Processing, State.Pending, Transition.PaymentFail)
 	controller.AddTransition(State.Processing, State.Paid, Transition.PaymendDone)

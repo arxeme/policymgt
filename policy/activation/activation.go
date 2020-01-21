@@ -4,33 +4,27 @@ import "github.com/arxeme/policymgt/fsm"
 
 import "errors"
 
-type stateEnums struct {
-	Initialized int `state:"1"` // Initial status
-	Pending     int `state:"3"` // Pending at customer, to submit required information
-	Processing  int `state:"2"` // Pending at operation team, to process the claim
-	Activated   int `state:"4"` // Claim is rejected by operation team
-}
-
 // State - Activation state enum
-var State stateEnums
+var State = &struct {
+	Pending    int `state:"1"` // Pending at customer, to submit required information
+	Processing int `state:"2"` // Pending at operation team, to process the claim
+	Activated  int `state:"4"` // Claim is rejected by operation team
+}{}
 
-type transitionEnums struct {
-	Start   int `transition:"1"`
+// Transition - Activation transition enum
+var Transition = &struct {
+	Create  int `transition:"1"`
 	Submit  int `transition:"2"`
 	Succeed int `transition:"3"`
 	Fail    int `transition:"4"`
-}
-
-// Transition - Activation transition enum
-var Transition transitionEnums
+}{}
 
 var controller *fsm.Controller
 
-// Init - Construct the FSM
-func Init() {
+// Initialize - Construct the FSM
+func Initialize() {
 	controller = fsm.NewController(State, Transition)
 
-	controller.AddTransition(State.Initialized, State.Pending, Transition.Start)
 	controller.AddTransition(State.Pending, State.Processing, Transition.Submit)
 	controller.AddTransition(State.Processing, State.Pending, Transition.Fail)
 	controller.AddTransition(State.Processing, State.Activated, Transition.Succeed)

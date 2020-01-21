@@ -125,6 +125,11 @@ func (c *Controller) AddTransition(src, dst, tsn int) error {
 	return nil
 }
 
+// AddStarter - Made the entering of the FSM a transition as well
+func (c *Controller) AddStarter(state, tsn int) error {
+	return c.AddTransition(Undefined, state, tsn)
+}
+
 // AddPrerequisite - Add check before transition
 func (c *Controller) AddPrerequisite(state int, e *Event) error {
 	if tgt, exist := c.states[state]; exist {
